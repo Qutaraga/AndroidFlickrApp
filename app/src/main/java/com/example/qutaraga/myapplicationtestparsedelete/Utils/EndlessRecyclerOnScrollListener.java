@@ -1,4 +1,4 @@
-package com.example.qutaraga.myapplicationtestparsedelete;
+package com.example.qutaraga.myapplicationtestparsedelete.Utils;
 
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;

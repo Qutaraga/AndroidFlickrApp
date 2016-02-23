@@ -1,4 +1,4 @@
-package com.example.qutaraga.myapplicationtestparsedelete;
+package com.example.qutaraga.myapplicationtestparsedelete.Utils;
 
 
 public class PhotoURL {

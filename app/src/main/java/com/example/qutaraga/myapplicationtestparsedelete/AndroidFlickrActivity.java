@@ -1,7 +1,6 @@
 package com.example.qutaraga.myapplicationtestparsedelete;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
+
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -10,6 +9,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.support.v7.app.AppCompatActivity;
+
+import com.example.qutaraga.myapplicationtestparsedelete.Flickr.Flickr;
+import com.example.qutaraga.myapplicationtestparsedelete.Utils.DataAdapter;
+import com.example.qutaraga.myapplicationtestparsedelete.Utils.EndlessRecyclerOnScrollListener;
+import com.example.qutaraga.myapplicationtestparsedelete.Utils.PhotoURL;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,70 +25,53 @@ import java.net.URLEncoder;
 
 
 /**
- * 1)Вероятно стоит добавить отображение title у изображений(PhotoURL - новая переменная title)
- * 2)Сделать нормальный вид приложению. Приятный для пользователя GUI.
- * 3)Так же стоит на превью сделать уменьшенные изображения, а при нажатии они принимали свой нормальный вид.
- * 4)Реализовать функцию сохранения изображения на sdcard
- *
- * Немного об архетектуре:
- * 1)Flickr - класс для взаиможействия программы с сайтом. Реализован как отдельный класс и при необходимости изменения
- * вида поисковика, нам не придется разбираться в остальной части программы.
- *
- * 2)PhotoURL - удобный вспомогательный класс. Был реализован для хранения url ссылки и дальнейшей ее вставки в imageView.
- * При желании, если мы захотим возвращать какой - либо другой элемент изображения с сервера, то для этой задачи на просто нужно будет добать новую переменную и
- * реализовать для нее set  и get.
- *
- * 3)DataAdapter - нужен для правильной организации элементов на экране.
- * Для вставки используется row_layout, для отображения библиотека picasso.
+ * Осталось исправить:
+ * 1)Убрать compile 'com.squareup.picasso:picasso:2.5.2' (заменить)
+ * 2)в партере по 2 картинке в строчке , в ландшафтте по 4
+ * 3)внизу появляется кнопка загрузить еще если у нас нет скрола
+ * 4)сделать возможность кеширования картинок в оперативной память , и на диске
+ * 5)сделать возможность паррралельной загрузке нескольких изображений
+ * настройка количество должно управляться параметром
+ * 6)при перевороте экрана не прерывать загрузку
+ * 7)сделать оповещения о состоянии загрузки через BoarcastReciver
+ * лучше сделать чтобы сообщения приходили в BoarcastReciver а из него происходил all back тех кто подписался callBack
+ * 8)когда будешь делать загрузку картинок и кеширование + не загружать заново при перевороте - поймешь
+ * + для того чтобы ты немного разобрался с этим компонентом
  *
  *
- * */
+ * Исправленно:
+ * 1)Убраны deprecated библиотеки из Flickr, запрос был заменен на HttpURLConnection
+ * 2)В классе Flickr все ссылочные поля класса были заменены на static final.
+ * 3)Dialog реализован в отдельном классе
+ * 4)"нужно использовать ndroid.support.v7.app.AppCompatActivity" - +
+ * 5)а почему тогда я вижу этот код: for(int i =0;i<adapter.getPhotoURLMyList().listSize();i++) - исправленно
+ * 6)сделать по нормальному работу с данными о списке фоток, а то у нас в Activity  один список MyList<String> photo = new MyList<>();
+ * в адаптер мы передаем другой, это все плохо ----> убраны дополнительные MyList, убран лишний метод prepareDate,
+ * остался единственный лист MyList<PhotoURL> photoURLMyList;
+ * 7)хоть бы по пакетам разбил как-то а то все в одной куче -----> исправленно.
+ **/
 
-
-public class AndroidFlickrActivity extends Activity {
+public class AndroidFlickrActivity extends AppCompatActivity {
 	RecyclerView recyclerView;
-	MyList<String> photo = new MyList<>();
+
 	LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
 
 	EditText searchText;
     Button searchButton;
     ImageView  showImage;
-	ProgressDialog dialog;
 	Flickr flickr = new Flickr();
 	DataAdapter adapter;
+	Dialog mydialog;
+
+	MyList<PhotoURL> photoURLMyList;
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+		mydialog = new Dialog(AndroidFlickrActivity.this);
 
-		dialog = new ProgressDialog(AndroidFlickrActivity.this)
-		{
-			@Override
-			public void onBackPressed() {}
-		};
-		dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		dialog.setMessage("Loading pictures...");
-		dialog.setIndeterminate(true);
-		dialog.setCanceledOnTouchOutside(false);
-
-
-		searchText = (EditText)findViewById(R.id.searchtext);
-		//текстовые элементы по центру
-		searchText.setGravity(Gravity.CENTER_HORIZONTAL);
-		//запрет на перенос строки
-		searchText.setMaxLines(1);
-
-        searchButton = (Button)findViewById(R.id.searchbutton);
-		searchButton.setOnClickListener(searchButtonOnClickListener);
-
-		showImage = (ImageView) findViewById(R.id.img_android);
-
-
-		recyclerView = (RecyclerView) findViewById(R.id.card_recycler_view);
-		recyclerView.setHasFixedSize(true);
-		recyclerView.setLayoutManager(linearLayoutManager);
-		recyclerView.setOnScrollListener(endlessRecyclerOnScrollListener);
+		InView();
     }
 
 	EndlessRecyclerOnScrollListener endlessRecyclerOnScrollListener = new EndlessRecyclerOnScrollListener(linearLayoutManager) {
@@ -96,20 +84,6 @@ public class AndroidFlickrActivity extends Activity {
 			}
 		}
 	};
-
-	private MyList<PhotoURL> prepareData(){
-
-		MyList<PhotoURL> photoURLMyList = new MyList<>();
-
-		for(int i=0;i<photo.listSize();i++){
-
-			PhotoURL photoURL = new PhotoURL();
-			photoURL.setPhotoURL(photo.get(i));
-			photoURLMyList.add(photoURL);
-
-		}
-		return photoURLMyList;
-	}
 
 	String searchQ;
     private Button.OnClickListener searchButtonOnClickListener = new Button.OnClickListener(){
@@ -124,8 +98,7 @@ public class AndroidFlickrActivity extends Activity {
 				e.printStackTrace();
 			}
 
-			for(int i =0;i<adapter.getPhotoURLMyList().listSize();i++)
-				adapter.getPhotoURLMyList().remove(0);
+			adapter.getPhotoURLMyList().clear();
 
 			flickr.setCountPage(1);
 			showLoadedImages();
@@ -133,34 +106,32 @@ public class AndroidFlickrActivity extends Activity {
 
 	private void showLoadedImages()
 	{
-		photo = null;
-		photo = new MyList<>();
-		dialog.show();
+		photoURLMyList = new MyList<>();
+		mydialog.show();
 
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-
 				String searchResult = flickr.QueryFlickr(searchQ);
-
 				ParseJSON(searchResult);
 
-				MyList<PhotoURL> list = prepareData();
-				for(int  i=0;i<list.listSize();i++)
-					adapter.getPhotoURLMyList().add(list.get(i));
+				for(int  i=0;i<photoURLMyList.listSize();i++)
+					adapter.getPhotoURLMyList().add(photoURLMyList.get(i));
 
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
 						adapter.notifyDataSetChanged();
 						endlessRecyclerOnScrollListener.setLoading(false);
-						dialog.dismiss();
+						mydialog.dismiss();
 					}
 				});
 			}
 		}).start();
 	}
     private void ParseJSON(String json){
+
+		photoURLMyList = new MyList<>();
 
     	String flickrId,flickrSecret,flickrServer,flickrFarm;
 		//image size - z medium 640, 640 on longest side
@@ -179,11 +150,52 @@ public class AndroidFlickrActivity extends Activity {
 				flickrFarm = FlickrPhoto.getString("farm");
 
 				String site = "http://farm"+flickrFarm +".staticflickr.com/"+flickrServer+"/"+flickrId+"_"+flickrSecret+"_"+size+".jpg";
-				photo.add(site);
+
+				PhotoURL photoURL = new PhotoURL();
+
+				photoURL.setPhotoURL(site);
+				photoURLMyList.add(photoURL);
+
 			}
+
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
 	}
+
+	public void InView(){
+		searchText = (EditText)findViewById(R.id.searchtext);
+		//текстовые элементы по центру
+		searchText.setGravity(Gravity.CENTER_HORIZONTAL);
+		//запрет на перенос строки
+		searchText.setMaxLines(1);
+
+		searchButton = (Button)findViewById(R.id.searchbutton);
+		searchButton.setOnClickListener(searchButtonOnClickListener);
+
+		showImage = (ImageView) findViewById(R.id.img_android);
+
+
+		recyclerView = (RecyclerView) findViewById(R.id.card_recycler_view);
+		recyclerView.setHasFixedSize(true);
+		recyclerView.setLayoutManager(linearLayoutManager);
+		recyclerView.setOnScrollListener(endlessRecyclerOnScrollListener);
+	}
+/*
+реализовать диалог для проверки интернет соеденения, при запуске программы выводить диалог только в том случае,
+если интернет соединение отсутствует.
+
+	public boolean isNetworkAvailable() {
+		ConnectivityManager cm = (ConnectivityManager)
+				getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+		// if no network is available networkInfo will be null
+		// otherwise check if we are connected
+		if (networkInfo != null && networkInfo.isConnected()) {
+			return true;
+		}
+		return false;
+	}
+	*/
 }
 
