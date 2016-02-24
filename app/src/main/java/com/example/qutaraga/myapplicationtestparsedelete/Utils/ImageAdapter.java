@@ -11,18 +11,18 @@ import com.example.qutaraga.myapplicationtestparsedelete.MyList;
 import com.example.qutaraga.myapplicationtestparsedelete.R;
 import com.squareup.picasso.Picasso;
 
-public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
+public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> {
 
     private MyList<PhotoURL> photoURLMyList;
     private Context context;
 
-    public DataAdapter(Context context,MyList<PhotoURL> _photoURLMyList) {
+    public ImageAdapter(Context context, MyList<PhotoURL> _photoURLMyList) {
         this.context = context;
         this.photoURLMyList = _photoURLMyList;
     }
 
     @Override
-    public DataAdapter.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
+    public ImageAdapter.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.row_layout, viewGroup, false);
         return new ViewHolder(view);
     }

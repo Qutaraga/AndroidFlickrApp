@@ -12,7 +12,7 @@ import android.widget.ImageView;
 import android.support.v7.app.AppCompatActivity;
 
 import com.example.qutaraga.myapplicationtestparsedelete.Flickr.Flickr;
-import com.example.qutaraga.myapplicationtestparsedelete.Utils.DataAdapter;
+import com.example.qutaraga.myapplicationtestparsedelete.Utils.ImageAdapter;
 import com.example.qutaraga.myapplicationtestparsedelete.Utils.EndlessRecyclerOnScrollListener;
 import com.example.qutaraga.myapplicationtestparsedelete.Utils.PhotoURL;
 
@@ -35,8 +35,6 @@ import java.net.URLEncoder;
  * 6)при перевороте экрана не прерывать загрузку
  * 7)сделать оповещения о состоянии загрузки через BoarcastReciver
  * лучше сделать чтобы сообщения приходили в BoarcastReciver а из него происходил all back тех кто подписался callBack
- * 8)когда будешь делать загрузку картинок и кеширование + не загружать заново при перевороте - поймешь
- * + для того чтобы ты немного разобрался с этим компонентом
  *
  *
  * Исправленно:
@@ -60,7 +58,7 @@ public class AndroidFlickrActivity extends AppCompatActivity {
     Button searchButton;
     ImageView  showImage;
 	Flickr flickr = new Flickr();
-	DataAdapter adapter;
+	ImageAdapter adapter;
 	Dialog mydialog;
 
 	MyList<PhotoURL> photoURLMyList;
@@ -88,7 +86,7 @@ public class AndroidFlickrActivity extends AppCompatActivity {
 	String searchQ;
     private Button.OnClickListener searchButtonOnClickListener = new Button.OnClickListener(){
 		public void onClick(View arg0) {
-			adapter = new DataAdapter(getApplicationContext(),new MyList<PhotoURL>());
+			adapter = new ImageAdapter(getApplicationContext(),new MyList<PhotoURL>());
 			recyclerView.setAdapter(adapter);
 
 			//конвектор для поискового запроса
